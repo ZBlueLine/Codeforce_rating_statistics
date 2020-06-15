@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html class="no-touch">
+<head>
+    <meta charset="utf-8">
+    <title>user ratedList</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@3.3.7/dist/css/bootstrap.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/echarts@4.8.0/dist/echarts.min.js"></script>
+</head>
+
+<body>
+    <div id="main" style="width: 600px;height:400px;"></div>
+    <div>
+        <div id="app" class="col-md-6 col-md-offset-3"><h1>CodeForces用户查找</h1>
+            从: <input v-model="newfloor" />分到<input v-model="newceil" />分<button v-on:click="search">查找</button>
+            <p>{{sumuser}}</p>
+            <table  class="table table-hover" id="app">
+                <thead>
+                    <tr>
+                        <th>CodeForces ID</th>
+                        <th>Rating</th>
+                        <th>maxRating</th>
+                        <th v-if="flag">Last Login</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr v-for="row in need(info)">
+                        <th ><a v-bind:href="'https://codeforces.com/profile/'+row.handle">{{ row.handle }}</a></th>
+                        <th >{{ row.rating }} </th>
+                        <th > {{ row.maxRating }} </th>
+                        <th v-if="flag"> {{ Time(row) }} </th>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</body>
+
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+<script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jquery@1.12.4/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@3.3.7/dist/js/bootstrap.min.js"></script>
+    
+    
+    <script>    
+
+        var nowTime = new Date();
+        var cnt = 0;
+        var info;
+        nowTime = nowTime.getTime() / 1000;
+        var url = "https://codeforces.com/api/user.ratedList?activeOnly=false";
+        var vm = new Vue({
+            el: '#app',
+            data () {
+                return {
+                newfloor : 3000,
+                newceil : 4000,
+                floor : 3000,
+                ceil : 4000,
+                sumuser:0,
+                userid:"",
+                info: null,
+                flag:true,
+                a:[],
+                b:[]
+                }
+            },
+            async created() {
+                await axios
+                //.get('https://codeforces.com/api/user.info?handles=OBlueLine;')
+                .get(url)
+                .then(response => {this.info = response.data.result});
+                // 基于准备好的dom，初始化echarts实例
+                var myChart = echarts.init(document.getElementById('main'));
+                // 指定图表的配置项和数据
+                vm.a = Array(100).fill(0);
+                
+                console.log(vm.a);
+                for(let i = 0; i <= 3000; i += 100)
+                {
+                    let temp = i + 99;
+                    vm.b.push(i+'~'+temp+"分");
+                    console.log("b"+vm.b);
+                }
+
+                for(let i of vm.info)
+                {
+                    vm.a[Math.floor(i.rating/100)]++;
+                    //console.log(Math.floor(i.rating/100))
+                }
+                console.log(vm.a);
+                var option = {
+                    title: {
+                        text: 'codeforce用户分布'
+                    },
+                    tooltip: {},
+                    legend: {
+                        data:['人数']
+                    },
+                    xAxis: {
+                        data: vm.b
+                    },
+                    yAxis: {},
+                    series: [{
+                        name: '人数',
+                        type: 'bar',
+                        data: vm.a
+                    }]
+                };
+
+                // 使用刚指定的配置项和数据显示图表。
+                myChart.setOption(option);
+            },
+            methods:{
+                search:function(event){
+                    axios
+                    //.get('https://codeforces.com/api/user.info?handles=OBlueLine;')
+                    .get(url)
+                    .then(response => {this.info = response.data.result});
+                    cnt = 0;
+                    info = vm.info;
+                    vm.floor = vm.newfloor;
+                    vm.ceil = vm.newceil;
+                    vm.judge();
+
+                },
+                judge: function(){
+                    if(vm.ceil - vm.floor <= 1000)
+                        vm.flag = true;
+                    else 
+                        vm.flag = false;
+                },
+                need: function (numbers) {
+                    var cnt =0;
+                    let a = numbers.filter(function (number) {
+                        if(vm.floor===""&&vm.ceil===""){
+                            vm.floor = 3000;
+                            vm.ceil = 4000;
+                        }
+                        if(number.rating>=vm.floor&&number.rating<=vm.ceil){
+                            cnt += 1;
+                            return true;
+                        }
+                    })
+                    vm.sumuser = cnt;
+                    return a;
+                },
+                Time:function(time){
+                    var d = nowTime-time.lastOnlineTimeSeconds;
+                    d = parseInt(d / 86400) + "天" + parseInt(d / 3600 % 24) + "小时" + parseInt(d / 60 % 60) + "分钟前";
+                    //alert(time.lastOnlineTimeSeconds);
+                    return d;
+                }
+                
+            }
+        })
+        // for(var i in info)
+        // {
+        //     console.log(i.handle);
+        // }
+
+        // var myChart = echarts.init(document.getElementById('main'));
+        // // 指定图表的配置项和数据
+        
+
+        // // 使用刚指定的配置项和数据显示图表。
+        // myChart.setOption(option);
+    </script>
+</html>
