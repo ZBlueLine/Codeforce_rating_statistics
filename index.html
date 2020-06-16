@@ -11,7 +11,17 @@
     <div id="main" style="width: 600px;height:400px;margin: 0 auto;"></div>
     <div>
         <div id="app" class="col-md-6 col-md-offset-3"><h1>CodeForces用户查找</h1>
-            从: <input v-model="newfloor" />分到<input v-model="newceil" />分<button v-on:click="search">查找</button>
+            从: <input v-model.lazy="newfloor" />分到<input v-model.lazy="newceil" />分<button v-on:click="search">查找</button>
+            <p></p>
+            <div>
+                <select v-model="len">
+                    <option>10</option>
+                    <option>50</option>
+                    <option>100</option>
+                    <option>{{sumuser}}</option>
+                </select>
+                <span>每页显示{{ len }}个用户</span>
+            </div>
             <p>总共有{{sumuser}}人</p>
             <table  class="table table-hover">
                 <thead>
@@ -23,11 +33,11 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <tr v-for="row in need(info)">
+                    <tr v-for="row in need(info).slice(begin, begin+len)">
                         <th ><a v-bind:href="'https://codeforces.com/profile/'+row.handle">{{ row.handle }}</a></th>
                         <th >{{ row.rating }} </th>
                         <th > {{ row.maxRating }} </th>
-                        <th v-if="flag"> {{ Time(row) }} </th>
+                        <th v-if="sumuser <= 100"> {{ Time(row) }} </th>
                     </tr>
                 </tbody>
             </table>
@@ -44,20 +54,21 @@
     <script>    
 
         var nowTime = new Date();
-        var cnt = 0;
         var info;
         var myChart = echarts.init(document.getElementById('main'));
         nowTime = nowTime.getTime() / 1000;
         var url = "https://codeforces.com/api/user.ratedList?activeOnly=false";
-        new Vue({
+        vm = new Vue({
             el: '#app',
             data () {
                 return {
                 newfloor : 3000,
                 newceil : 4000,
-                floor : 3000,
-                ceil : 4000,
+                floor : 0,
+                ceil : 0,
                 sumuser:0,
+                len: 10,
+                begin : 0,
                 userid:"",
                 info: [],
                 flag:true,
@@ -65,10 +76,8 @@
                 b:[]
                 }
             },
-            mounted: function () {
-                this.drawEchart();
-            },
             async created() {
+                this.drawEchart();
                 await axios
                 //.get('https://codeforces.com/api/user.info?handles=OBlueLine;')
                 .get(url)
@@ -100,9 +109,10 @@
             },
             methods:{
                 need: function (b) {
-                    var cnt =0;
+                    var cnt = 0;
                     let floor = this.floor;
                     let ceil = this.ceil;
+                    let sumuser = this.sumuser;
                     let a = b.filter(function (number) {
                         if(number.rating>=floor&&number.rating<=ceil){
                             cnt += 1;
@@ -138,11 +148,7 @@
                     myChart.showLoading();
                 },
                 search:function(event){
-                    axios
-                    //.get('https://codeforces.com/api/user.info?handles=OBlueLine;')
-                    .get(url)
-                    .then(response => {this.info = response.data.result});
-                    cnt = 0;
+                    sumuser = 0;
                     info = this.info;
                     this.floor = this.newfloor;
                     this.ceil = this.newceil;
