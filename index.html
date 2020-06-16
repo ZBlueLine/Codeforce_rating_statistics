@@ -49,7 +49,7 @@
         var myChart = echarts.init(document.getElementById('main'));
         nowTime = nowTime.getTime() / 1000;
         var url = "https://codeforces.com/api/user.ratedList?activeOnly=false";
-        var vm = new Vue({
+        new Vue({
             el: '#app',
             data () {
                 return {
@@ -59,7 +59,7 @@
                 ceil : 4000,
                 sumuser:0,
                 userid:"",
-                info: null,
+                info: [],
                 flag:true,
                 a:[0],
                 b:[]
@@ -74,31 +74,44 @@
                 .get(url)
                 .then(response => {this.info = response.data.result});
                 // 基于准备好的dom，初始化echarts实例
-                vm.a = Array(100).fill(0);
-                console.log(vm.a);
+                this.a = Array(100).fill(0);
+                console.log(this.a);
                 for(let i = 0; i <= 3000; i += 100)
                 {
                     let temp = i + 99;
-                    vm.b.push(i+'~'+temp+"分");
-                    console.log("b"+vm.b);
+                    this.b.push(i+'~'+temp+"分");
+                    // console.log("b"+this.b);
                 }
 
-                for(let i of vm.info)
+                for(let i of this.info)
                 {
-                    vm.a[Math.floor(i.rating/100)]++;
+                    this.a[Math.floor(i.rating/100)]++;
                     //console.log(Math.floor(i.rating/100))
                 }
                 myChart.hideLoading();
                 myChart.setOption({
                     xAxis: {
-                        data: vm.b
+                        data: this.b
                     },
                     series: [{
-                        data: vm.a
+                        data: this.a
                     }]
                 });
             },
             methods:{
+                need: function (b) {
+                    var cnt =0;
+                    let floor = this.floor;
+                    let ceil = this.ceil;
+                    let a = b.filter(function (number) {
+                        if(number.rating>=floor&&number.rating<=ceil){
+                            cnt += 1;
+                            return true;
+                        }
+                    })
+                    this.sumuser = cnt;
+                    return a;
+                },
                 drawEchart:function(){
                     // 指定图表的配置项和数据
                     var option = {
@@ -130,33 +143,19 @@
                     .get(url)
                     .then(response => {this.info = response.data.result});
                     cnt = 0;
-                    info = vm.info;
-                    vm.floor = vm.newfloor;
-                    vm.ceil = vm.newceil;
-                    vm.judge();
+                    info = this.info;
+                    this.floor = this.newfloor;
+                    this.ceil = this.newceil;
+                    this.judge();
 
                 },
                 judge: function(){
-                    if(vm.ceil - vm.floor <= 1000)
-                        vm.flag = true;
+                    if(this.ceil - this.floor <= 1000)
+                        this.flag = true;
                     else 
-                        vm.flag = false;
+                        this.flag = false;
                 },
-                need: function (numbers) {
-                    var cnt =0;
-                    let a = numbers.filter(function (number) {
-                        if(vm.floor===""&&vm.ceil===""){
-                            vm.floor = 3000;
-                            vm.ceil = 4000;
-                        }
-                        if(number.rating>=vm.floor&&number.rating<=vm.ceil){
-                            cnt += 1;
-                            return true;
-                        }
-                    })
-                    vm.sumuser = cnt;
-                    return a;
-                },
+                
                 Time:function(time){
                     var d = nowTime-time.lastOnlineTimeSeconds;
                     d = parseInt(d / 86400) + "天" + parseInt(d / 3600 % 24) + "小时" + parseInt(d / 60 % 60) + "分钟前";
