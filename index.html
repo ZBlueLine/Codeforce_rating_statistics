@@ -12,8 +12,8 @@
     <div>
         <div id="app" class="col-md-6 col-md-offset-3"><h1>CodeForces用户查找</h1>
             从: <input v-model="newfloor" />分到<input v-model="newceil" />分<button v-on:click="search">查找</button>
-            <p>{{sumuser}}</p>
-            <table  class="table table-hover" id="app">
+            <p>总共{{sumuser}}人</p>
+            <table  class="table table-hover">
                 <thead>
                     <tr>
                         <th>CodeForces ID</th>
@@ -46,6 +46,7 @@
         var nowTime = new Date();
         var cnt = 0;
         var info;
+        var myChart = echarts.init(document.getElementById('main'));
         nowTime = nowTime.getTime() / 1000;
         var url = "https://codeforces.com/api/user.ratedList?activeOnly=false";
         var vm = new Vue({
@@ -60,9 +61,12 @@
                 userid:"",
                 info: null,
                 flag:true,
-                a:[],
+                a:[0],
                 b:[]
                 }
+            },
+            mounted: function () {
+                this.drawEchart();
             },
             async created() {
                 await axios
@@ -70,10 +74,7 @@
                 .get(url)
                 .then(response => {this.info = response.data.result});
                 // 基于准备好的dom，初始化echarts实例
-                var myChart = echarts.init(document.getElementById('main'));
-                // 指定图表的配置项和数据
                 vm.a = Array(100).fill(0);
-                
                 console.log(vm.a);
                 for(let i = 0; i <= 3000; i += 100)
                 {
@@ -87,30 +88,42 @@
                     vm.a[Math.floor(i.rating/100)]++;
                     //console.log(Math.floor(i.rating/100))
                 }
-                console.log(vm.a);
-                var option = {
-                    title: {
-                        text: 'codeforce用户分布'
-                    },
-                    tooltip: {},
-                    legend: {
-                        data:['人数']
-                    },
+                myChart.hideLoading();
+                myChart.setOption({
                     xAxis: {
                         data: vm.b
                     },
-                    yAxis: {},
                     series: [{
-                        name: '人数',
-                        type: 'bar',
                         data: vm.a
                     }]
-                };
-
-                // 使用刚指定的配置项和数据显示图表。
-                myChart.setOption(option);
+                });
             },
             methods:{
+                drawEchart:function(){
+                    // 指定图表的配置项和数据
+                    var option = {
+                        title: {
+                            text: 'codeforce用户分布'
+                        },
+                        tooltip: {},
+                        legend: {
+                            data:['人数']
+                        },
+                        xAxis: {
+                            data: []
+                        },
+                        yAxis: {},
+                        series: [{
+                            name: '人数',
+                            type: 'bar',
+                            data: []
+                        }]
+                    };
+
+                    // 使用刚指定的配置项和数据显示图表。
+                    myChart.setOption(option);
+                    myChart.showLoading();
+                },
                 search:function(event){
                     axios
                     //.get('https://codeforces.com/api/user.info?handles=OBlueLine;')
